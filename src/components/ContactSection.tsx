@@ -2,12 +2,15 @@ import { FormEvent, useState } from 'react';
 import { Mail, Send, Github, Twitter, Instagram } from 'lucide-react';
 import FadeIn from './FadeIn';
 
+// Replace this with the inbox that should receive portfolio enquiries.
 const CONTACT_EMAIL = 'jack@example.com';
+const CONTACT_ENDPOINT = `https://formsubmit.co/ajax/${CONTACT_EMAIL}`;
 
 const ContactSection = () => {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
   const [errors, setErrors] = useState({ name: '', email: '', message: '' });
-  const [status, setStatus] = useState('');
+  const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [statusMessage, setStatusMessage] = useState('');
 
   const validate = () => {
     const nextErrors = { name: '', email: '', message: '' };
@@ -30,41 +33,56 @@ const ContactSection = () => {
     return !nextErrors.name && !nextErrors.email && !nextErrors.message;
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    setStatus('');
+    setStatusMessage('');
 
-    if (!validate()) {
-      return;
+    if (!validate()) return;
+
+    setStatus('sending');
+    setStatusMessage('Sending your message...');
+
+    try {
+      const response = await fetch(CONTACT_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.email.trim(),
+          message: form.message.trim(),
+          _subject: `New portfolio enquiry from ${form.name.trim()}`,
+          _replyto: form.email.trim(),
+          _template: 'table',
+        }),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || result?.success === false) {
+        throw new Error('Unable to send message');
+      }
+
+      setStatus('success');
+      setStatusMessage('Message sent successfully. Thank you!');
+      setForm({ name: '', email: '', message: '' });
+      setErrors({ name: '', email: '', message: '' });
+    } catch {
+      setStatus('error');
+      setStatusMessage('Something went wrong. Please try again in a moment.');
     }
-
-    const subject = `Portfolio enquiry from ${form.name.trim()}`;
-    const body = [
-      `Name: ${form.name.trim()}`,
-      `Email: ${form.email.trim()}`,
-      '',
-      'Project details:',
-      form.message.trim(),
-    ].join('\n');
-
-    const mailtoUrl = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-    // Open the user's configured mail app without navigating the portfolio page.
-    const emailWindow = window.open(mailtoUrl, '_self');
-
-    if (!emailWindow) {
-      setStatus('Unable to open your email app. Please use the email link below.');
-      return;
-    }
-
-    setStatus('Opening your email app...');
   };
 
   const updateField = (field: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: '' }));
-    setStatus('');
+    if (status !== 'idle') {
+      setStatus('idle');
+      setStatusMessage('');
+    }
   };
 
   return (
@@ -153,29 +171,42 @@ const ContactSection = () => {
               {errors.message && <p className="mt-2 text-xs text-red-300">{errors.message}</p>}
             </div>
 
-            <button
-              type="submit"
-              className="self-start rounded-full font-medium uppercase tracking-widest text-white
-                px-8 py-3 sm:px-10 sm:py-3.5
-                text-xs sm:text-sm md:text-base
-                flex items-center gap-2 cursor-pointer
-                transition-opacity hover:opacity-90"
-              style={{
-                background: 'linear-gradient(123deg, #18011F 7%, #B600A8 37%, #7621B0 72%, #BE4C00 100%)',
-                boxShadow: '0px 4px 4px rgba(181, 1, 167, 0.25), inset 4px 4px 12px #7721B1',
-                outline: '2px solid white',
-                outlineOffset: '-3px',
-              }}
-            >
-              Send Message
-              <Send size={16} />
-            </button>
+            <div className="flex flex-col items-start gap-3">
+              <button
+                type="submit"
+                disabled={status === 'sending'}
+                className="self-start rounded-full font-medium uppercase tracking-widest text-white
+                  px-8 py-3 sm:px-10 sm:py-3.5
+                  text-xs sm:text-sm md:text-base
+                  flex items-center gap-2 cursor-pointer
+                  disabled:cursor-wait disabled:opacity-70
+                  transition-opacity hover:opacity-90"
+                style={{
+                  background: 'linear-gradient(123deg, #18011F 7%, #B600A8 37%, #7621B0 72%, #BE4C00 100%)',
+                  boxShadow: '0px 4px 4px rgba(181, 1, 167, 0.25), inset 4px 4px 12px #7721B1',
+                  outline: '2px solid white',
+                  outlineOffset: '-3px',
+                }}
+              >
+                {status === 'sending' ? 'Sending...' : 'Send Message'}
+                <Send size={16} />
+              </button>
 
-            {status && (
-              <p className="text-sm text-[#D7E2EA]/70" role="status">
-                {status}
-              </p>
-            )}
+              {statusMessage && (
+                <p
+                  className={`text-sm font-light ${
+                    status === 'success'
+                      ? 'text-emerald-300'
+                      : status === 'error'
+                        ? 'text-red-300'
+                        : 'text-[#D7E2EA]/70'
+                  }`}
+                  role="status"
+                >
+                  {statusMessage}
+                </p>
+              )}
+            </div>
           </form>
         </FadeIn>
 
