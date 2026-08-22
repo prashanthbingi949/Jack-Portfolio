@@ -2,42 +2,69 @@ import { FormEvent, useState } from 'react';
 import { Mail, Send, Github, Twitter, Instagram } from 'lucide-react';
 import FadeIn from './FadeIn';
 
+const CONTACT_EMAIL = 'jack@example.com';
+
 const ContactSection = () => {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
-  const [sent, setSent] = useState(false);
+  const [errors, setErrors] = useState({ name: '', email: '', message: '' });
+  const [status, setStatus] = useState('');
+
+  const validate = () => {
+    const nextErrors = { name: '', email: '', message: '' };
+
+    if (!form.name.trim()) {
+      nextErrors.name = 'Please enter your name.';
+    }
+
+    if (!form.email.trim()) {
+      nextErrors.email = 'Please enter your email.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      nextErrors.email = 'Please enter a valid email address.';
+    }
+
+    if (!form.message.trim()) {
+      nextErrors.message = 'Please tell me about your project.';
+    }
+
+    setErrors(nextErrors);
+    return !nextErrors.name && !nextErrors.email && !nextErrors.message;
+  };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    setStatus('');
 
-    const name = form.name.trim();
-    const email = form.email.trim();
-    const message = form.message.trim();
+    if (!validate()) {
+      return;
+    }
 
-    if (!name || !email || !message) return;
-
-    const subject = `Portfolio enquiry from ${name}`;
+    const subject = `Portfolio enquiry from ${form.name.trim()}`;
     const body = [
-      `Name: ${name}`,
-      `Email: ${email}`,
+      `Name: ${form.name.trim()}`,
+      `Email: ${form.email.trim()}`,
       '',
       'Project details:',
-      message,
+      form.message.trim(),
     ].join('\n');
 
-    const mailtoUrl = `mailto:jack@example.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    const mailtoUrl = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
-    setSent(true);
-    window.location.href = mailtoUrl;
+    // Open the user's configured mail app without navigating the portfolio page.
+    const emailWindow = window.open(mailtoUrl, '_self');
 
-    window.setTimeout(() => {
-      setSent(false);
-      setForm({ name: '', email: '', message: '' });
-    }, 1500);
+    if (!emailWindow) {
+      setStatus('Unable to open your email app. Please use the email link below.');
+      return;
+    }
+
+    setStatus('Opening your email app...');
   };
 
   const updateField = (field: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
+    setErrors((current) => ({ ...current, [field]: '' }));
+    setStatus('');
   };
 
   return (
@@ -72,58 +99,67 @@ const ContactSection = () => {
               p-6 sm:p-8 md:p-10"
           >
             <div className="flex flex-col sm:flex-row gap-5 sm:gap-6">
-              <input
-                type="text"
-                name="name"
-                placeholder="Your Name"
-                autoComplete="name"
-                required
-                value={form.name}
-                onChange={(e) => updateField('name', e.target.value)}
-                className="flex-1 rounded-2xl bg-[#0C0C0C] border border-[#D7E2EA]/15
-                  px-4 sm:px-5 py-3 sm:py-4
-                  text-[#D7E2EA] placeholder:text-[#D7E2EA]/40
-                  text-sm sm:text-base
-                  focus:outline-none focus:border-[#D7E2EA]/50 transition-colors"
-              />
-              <input
-                type="email"
-                name="email"
-                placeholder="Your Email"
-                autoComplete="email"
-                required
-                value={form.email}
-                onChange={(e) => updateField('email', e.target.value)}
-                className="flex-1 rounded-2xl bg-[#0C0C0C] border border-[#D7E2EA]/15
-                  px-4 sm:px-5 py-3 sm:py-4
-                  text-[#D7E2EA] placeholder:text-[#D7E2EA]/40
-                  text-sm sm:text-base
-                  focus:outline-none focus:border-[#D7E2EA]/50 transition-colors"
-              />
+              <div className="flex-1">
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Your Name"
+                  autoComplete="name"
+                  value={form.name}
+                  onChange={(e) => updateField('name', e.target.value)}
+                  aria-invalid={Boolean(errors.name)}
+                  className="w-full rounded-2xl bg-[#0C0C0C] border border-[#D7E2EA]/15
+                    px-4 sm:px-5 py-3 sm:py-4
+                    text-[#D7E2EA] placeholder:text-[#D7E2EA]/40
+                    text-sm sm:text-base
+                    focus:outline-none focus:border-[#D7E2EA]/50 transition-colors"
+                />
+                {errors.name && <p className="mt-2 text-xs text-red-300">{errors.name}</p>}
+              </div>
+
+              <div className="flex-1">
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Your Email"
+                  autoComplete="email"
+                  value={form.email}
+                  onChange={(e) => updateField('email', e.target.value)}
+                  aria-invalid={Boolean(errors.email)}
+                  className="w-full rounded-2xl bg-[#0C0C0C] border border-[#D7E2EA]/15
+                    px-4 sm:px-5 py-3 sm:py-4
+                    text-[#D7E2EA] placeholder:text-[#D7E2EA]/40
+                    text-sm sm:text-base
+                    focus:outline-none focus:border-[#D7E2EA]/50 transition-colors"
+                />
+                {errors.email && <p className="mt-2 text-xs text-red-300">{errors.email}</p>}
+              </div>
             </div>
 
-            <textarea
-              name="message"
-              placeholder="Tell me about your project..."
-              required
-              rows={5}
-              value={form.message}
-              onChange={(e) => updateField('message', e.target.value)}
-              className="rounded-2xl bg-[#0C0C0C] border border-[#D7E2EA]/15
-                px-4 sm:px-5 py-3 sm:py-4
-                text-[#D7E2EA] placeholder:text-[#D7E2EA]/40
-                text-sm sm:text-base resize-none
-                focus:outline-none focus:border-[#D7E2EA]/50 transition-colors"
-            />
+            <div>
+              <textarea
+                name="message"
+                placeholder="Tell me about your project..."
+                rows={5}
+                value={form.message}
+                onChange={(e) => updateField('message', e.target.value)}
+                aria-invalid={Boolean(errors.message)}
+                className="w-full rounded-2xl bg-[#0C0C0C] border border-[#D7E2EA]/15
+                  px-4 sm:px-5 py-3 sm:py-4
+                  text-[#D7E2EA] placeholder:text-[#D7E2EA]/40
+                  text-sm sm:text-base resize-none
+                  focus:outline-none focus:border-[#D7E2EA]/50 transition-colors"
+              />
+              {errors.message && <p className="mt-2 text-xs text-red-300">{errors.message}</p>}
+            </div>
 
             <button
               type="submit"
-              disabled={sent}
               className="self-start rounded-full font-medium uppercase tracking-widest text-white
                 px-8 py-3 sm:px-10 sm:py-3.5
                 text-xs sm:text-sm md:text-base
                 flex items-center gap-2 cursor-pointer
-                disabled:opacity-70 disabled:cursor-default transition-opacity"
+                transition-opacity hover:opacity-90"
               style={{
                 background: 'linear-gradient(123deg, #18011F 7%, #B600A8 37%, #7621B0 72%, #BE4C00 100%)',
                 boxShadow: '0px 4px 4px rgba(181, 1, 167, 0.25), inset 4px 4px 12px #7721B1',
@@ -131,24 +167,26 @@ const ContactSection = () => {
                 outlineOffset: '-3px',
               }}
             >
-              {sent ? 'Opening Email...' : (
-                <>
-                  Send Message
-                  <Send size={16} />
-                </>
-              )}
+              Send Message
+              <Send size={16} />
             </button>
+
+            {status && (
+              <p className="text-sm text-[#D7E2EA]/70" role="status">
+                {status}
+              </p>
+            )}
           </form>
         </FadeIn>
 
         <FadeIn delay={0.3} y={20}>
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mt-12">
             <a
-              href="mailto:jack@example.com"
+              href={`mailto:${CONTACT_EMAIL}`}
               className="flex items-center gap-3 text-[#D7E2EA] hover:opacity-70 transition-opacity"
             >
               <Mail size={20} />
-              <span className="text-sm sm:text-base font-light">jack@example.com</span>
+              <span className="text-sm sm:text-base font-light">{CONTACT_EMAIL}</span>
             </a>
 
             <div className="flex gap-5">
