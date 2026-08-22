@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useMemo } from 'react';
 import type { ElementType, ReactNode } from 'react';
 
 interface FadeInProps {
@@ -22,7 +23,11 @@ const FadeIn = ({
   className = '',
   ...rest
 }: FadeInProps) => {
-  const MotionComponent = motion.create(as);
+  // Keep the motion component stable between renders.
+  // Creating a new motion component on every render causes React to
+  // remount the wrapper, which makes inputs inside it lose focus and
+  // visibly disappear/reappear on every keystroke.
+  const MotionComponent = useMemo(() => motion.create(as), [as]);
 
   return (
     <MotionComponent
