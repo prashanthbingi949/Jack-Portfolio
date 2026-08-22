@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { Mail, Send, Github, Twitter, Instagram } from 'lucide-react';
 import FadeIn from './FadeIn';
 
@@ -6,13 +6,38 @@ const ContactSection = () => {
   const [form, setForm] = useState({ name: '', email: '', message: '' });
   const [sent, setSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    e.stopPropagation();
+
+    const name = form.name.trim();
+    const email = form.email.trim();
+    const message = form.message.trim();
+
+    if (!name || !email || !message) return;
+
+    const subject = `Portfolio enquiry from ${name}`;
+    const body = [
+      `Name: ${name}`,
+      `Email: ${email}`,
+      '',
+      'Project details:',
+      message,
+    ].join('\n');
+
+    const mailtoUrl = `mailto:jack@example.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
     setSent(true);
-    setTimeout(() => {
+    window.location.href = mailtoUrl;
+
+    window.setTimeout(() => {
       setSent(false);
       setForm({ name: '', email: '', message: '' });
-    }, 3000);
+    }, 1500);
+  };
+
+  const updateField = (field: keyof typeof form, value: string) => {
+    setForm((current) => ({ ...current, [field]: value }));
   };
 
   return (
@@ -40,6 +65,7 @@ const ContactSection = () => {
         <FadeIn delay={0.2} y={30}>
           <form
             onSubmit={handleSubmit}
+            noValidate
             className="flex flex-col gap-5 sm:gap-6
               rounded-[32px] sm:rounded-[40px] md:rounded-[50px]
               border-2 border-[#D7E2EA]/20 bg-[#141414]
@@ -48,10 +74,12 @@ const ContactSection = () => {
             <div className="flex flex-col sm:flex-row gap-5 sm:gap-6">
               <input
                 type="text"
+                name="name"
                 placeholder="Your Name"
+                autoComplete="name"
                 required
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => updateField('name', e.target.value)}
                 className="flex-1 rounded-2xl bg-[#0C0C0C] border border-[#D7E2EA]/15
                   px-4 sm:px-5 py-3 sm:py-4
                   text-[#D7E2EA] placeholder:text-[#D7E2EA]/40
@@ -60,10 +88,12 @@ const ContactSection = () => {
               />
               <input
                 type="email"
+                name="email"
                 placeholder="Your Email"
+                autoComplete="email"
                 required
                 value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
+                onChange={(e) => updateField('email', e.target.value)}
                 className="flex-1 rounded-2xl bg-[#0C0C0C] border border-[#D7E2EA]/15
                   px-4 sm:px-5 py-3 sm:py-4
                   text-[#D7E2EA] placeholder:text-[#D7E2EA]/40
@@ -73,11 +103,12 @@ const ContactSection = () => {
             </div>
 
             <textarea
+              name="message"
               placeholder="Tell me about your project..."
               required
               rows={5}
               value={form.message}
-              onChange={(e) => setForm({ ...form, message: e.target.value })}
+              onChange={(e) => updateField('message', e.target.value)}
               className="rounded-2xl bg-[#0C0C0C] border border-[#D7E2EA]/15
                 px-4 sm:px-5 py-3 sm:py-4
                 text-[#D7E2EA] placeholder:text-[#D7E2EA]/40
@@ -92,7 +123,7 @@ const ContactSection = () => {
                 px-8 py-3 sm:px-10 sm:py-3.5
                 text-xs sm:text-sm md:text-base
                 flex items-center gap-2 cursor-pointer
-                disabled:opacity-70 transition-opacity"
+                disabled:opacity-70 disabled:cursor-default transition-opacity"
               style={{
                 background: 'linear-gradient(123deg, #18011F 7%, #B600A8 37%, #7621B0 72%, #BE4C00 100%)',
                 boxShadow: '0px 4px 4px rgba(181, 1, 167, 0.25), inset 4px 4px 12px #7721B1',
@@ -100,7 +131,7 @@ const ContactSection = () => {
                 outlineOffset: '-3px',
               }}
             >
-              {sent ? 'Message Sent!' : (
+              {sent ? 'Opening Email...' : (
                 <>
                   Send Message
                   <Send size={16} />
