@@ -1,14 +1,43 @@
 import { useRef } from 'react';
-import { useScroll, useTransform, motion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 interface AnimatedTextProps {
   text: string;
   className?: string;
 }
 
+interface AnimatedWordProps {
+  word: string;
+  index: number;
+  total: number;
+  scrollYProgress: ReturnType<typeof useScroll>['scrollYProgress'];
+}
+
+const AnimatedWord = ({ word, index, total, scrollYProgress }: AnimatedWordProps) => {
+  const progress = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [
+      Math.max(0, index / total),
+      Math.min(1, (index + 1) / total),
+    ]
+  );
+
+  const opacity = useTransform(progress, [0, 1], [0.2, 1]);
+
+  return (
+    <motion.span
+      style={{ opacity }}
+      className="inline-block"
+    >
+      {word}
+    </motion.span>
+  );
+};
+
 const AnimatedText = ({ text, className = '' }: AnimatedTextProps) => {
   const ref = useRef<HTMLParagraphElement>(null);
-  const characters = text.split('');
+  const words = text.trim().split(/\s+/);
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -16,34 +45,22 @@ const AnimatedText = ({ text, className = '' }: AnimatedTextProps) => {
   });
 
   return (
-    <p ref={ref} className={`relative ${className}`}>
-      {characters.map((_, index) => (
-        <span key={index} className="invisible">
-          {text[index]}
+    <p
+      ref={ref}
+      className={`relative ${className}`}
+      aria-label={text}
+    >
+      {words.map((word, index) => (
+        <span key={`${word}-${index}`}>
+          <AnimatedWord
+            word={word}
+            index={index}
+            total={words.length}
+            scrollYProgress={scrollYProgress}
+          />
+          {index < words.length - 1 ? ' ' : null}
         </span>
       ))}
-      <span className="absolute inset-0 flex flex-wrap">
-        {characters.map((char, index) => {
-          const progress = useTransform(
-            scrollYProgress,
-            [0, 1],
-            [
-              Math.max(0.2, index / characters.length),
-              Math.min(1, (index + 1) / characters.length),
-            ]
-          );
-          const opacity = useTransform(progress, [0, 1], [0.2, 1]);
-
-          return (
-            <motion.span
-              key={index}
-              style={{ opacity }}
-            >
-              {char}
-            </motion.span>
-          );
-        })}
-      </span>
     </p>
   );
 };
