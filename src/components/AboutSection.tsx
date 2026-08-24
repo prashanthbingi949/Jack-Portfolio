@@ -4,7 +4,7 @@ import ContactButton from './ContactButton';
 
 const AboutSection = () => {
   const aboutText =
-    "With more than five years of experience in design, i focus on branding, web design, and user experience, i truly enjoy working with businesses that aim to stand out and present their best image. Let's build something incredible together!";
+    "With more than five years of experience in design, I focus on branding, web design, and user experience. I truly enjoy working with businesses that aim to stand out and present their best image. Let's build something incredible together!";
 
   return (
     <section
@@ -69,7 +69,7 @@ const AboutSection = () => {
           <AnimatedText
             text={aboutText}
             className="text-[#D7E2EA] font-medium text-center leading-relaxed
-              max-w-[560px] clamp-text"
+              max-w-[720px] clamp-text"
           />
           <FadeIn delay={0.4} y={20}>
             <ContactButton />
@@ -80,6 +80,7 @@ const AboutSection = () => {
       <style>{`
         .clamp-text {
           font-size: clamp(1rem, 2vw, 1.35rem);
+          line-height: 1.8;
         }
         section h2 {
           font-size: clamp(3rem, 12vw, 160px);
