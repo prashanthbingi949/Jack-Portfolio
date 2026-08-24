@@ -52,10 +52,10 @@ const HeroSection = () => {
           y={20}
           as="p"
           className="text-[#D7E2EA] font-light uppercase tracking-wide leading-snug
-            max-w-[160px] sm:max-w-[220px] md:max-w-[260px]
+            max-w-[180px] sm:max-w-[250px] md:max-w-[320px]
             text-[clamp(0.75rem,1.4vw,1.5rem)]"
         >
-          a 3d creator driven by crafting striking and unforgettable projects
+          A creative web designer crafting bold digital experiences and unforgettable websites
         </FadeIn>
         <FadeIn delay={0.5} y={20}>
           <ContactButton />
